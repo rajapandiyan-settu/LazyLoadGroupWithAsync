@@ -3,129 +3,240 @@
 var lazyLoadData = [];
 createLazyLoadData(10000);
 
-    var grid1 = new ej.grids.Grid({
-      dataSource: lazyLoadData,
-      height: 300,
-      allowPaging: true,
-      allowGrouping: true,
-      allowSorting: true,
-      groupSettings: { enableLazyLoading: true, columns: ['ProductName'] },
-      columns: [
-          { field: 'OrderID', headerText: 'Order ID', textAlign: 'Right', width: 120 },
-          { field: 'ProductName', headerText: 'Product Name', width: 160 },
-          { field: 'ProductID', headerText: 'Product ID', textAlign: 'Right', width: 120 },
-          { field: 'CustomerID', headerText: 'Customer ID', width: 120 },
-          { field: 'CustomerName', headerText: 'Customer Name', width: 160 }
-      ]
-  });
-  grid1.appendTo('#Grid1');
-  var grid2 = new ej.grids.Grid({
-      height: 300,
-      allowPaging: true,
-      allowGrouping: true,
-      allowSorting: true,
-      groupSettings: { enableLazyLoading: true },
-      columns: [
-          { field: 'OrderID', headerText: 'Order ID', textAlign: 'Right', width: 120 },
-          { field: 'ProductName', headerText: 'Product Name', width: 160 },
-          { field: 'ProductID', headerText: 'Product ID', textAlign: 'Right', width: 120 },
-          { field: 'CustomerID', headerText: 'Customer ID', width: 120 },
-          { field: 'CustomerName', headerText: 'Customer Name', width: 160 }
-      ],
-      load: load,
-      dataStateChange: dataStateChange,
-      dataSourceChanged: dataSourceChanged,
-      actionFailure: actionFailure,
-  });
-  grid2.appendTo('#Grid2');
-  function load() {
-      var currentPageData = new ej.data.DataManager(lazyLoadData).executeLocal(new ej.data.Query().take(this.enableInfiniteScrolling
-          ? this.pageSettings.pageSize * 3
-          : this.pageSettings.pageSize));
-      grid2.dataSource = {
-          result: currentPageData,
-          count: lazyLoadData.length,
-      };
-  }
-  function dataStateChange(state) {
-      if (state.action &&
-          (state.action.requestType == 'filterchoicerequest' ||
-              state.action.requestType == 'stringfilterrequest')) {
-          state.dataSource(lazyLoadData);
-      }
-      else {
-          var currentPageData = lazyLoadData;
-          var query = new ej.data.Query();
-          if (state.search) {
-              query.search(state.search[0].key, state.search[0].fields);
-          }
-          if (state.where) {
-              var gridqueries = grid2.getDataModule().generateQuery().queries;
-              var wherequery;
-              for (var i = 0; i < gridqueries.length; i++) {
-                  if (gridqueries[i].fn == 'onWhere') {
-                      wherequery = gridqueries[i].e;
-                  }
-              }
-              query.where(wherequery);
-          }
-          if (state.sorted && state.sorted.length) {
-              for (var i = 0; i < state.sorted.length; i++) {
-                  query.sortBy(state.sorted[i].name, state.sorted[i].direction);
-              }
-          }
-          if (state.take > -1 && state.skip > -1) {
-              var pageIndex = (state.skip / state.take) + 1;
-              var pageSize = state.take;
-              query.isCountRequired = true;
-              query.page(pageIndex, pageSize);
-          }
-          if (state.group && state.group.length) {
-              for (var i = 0; i < state.group.length; i++) {
-                  query.group(state.group[i]);
-              }
-          }
-          if (state.isLazyLoad) {
-              query.lazyLoad.push({ key: 'isLazyLoad', value: state.isLazyLoad });
-          }
-          if (state.isLazyLoad && state.onDemandGroupInfo) {
-              query.lazyLoad.push({ key: 'onDemandGroupInfo', value: state.action.lazyLoadQuery });
-              query.isCountRequired = true;
-          }
-          grid2.dataSource = new ej.data.DataManager(currentPageData).executeLocal(query);
-      }
-  }
-  function actionFailure(args) {
-      console.log(args);
-  }
-  function dataSourceChanged(state) {
-      if (state.action === 'add') {
-          lazyLoadData.unshift(state.data);
-          state.endEdit();
-      }
-      if (state.action === 'edit') {
-          for (var j = 0; j < lazyLoadData.length; j++) {
-              if (lazyLoadData[j]['OrderID'] == state.data['OrderID']) {
-                  lazyLoadData[j] = state.data;
-                  break;
-              }
-          }
-          state.endEdit();
-      }
-      if (state.requestType == 'delete') {
-          for (var i = 0; i < state.data.length; i++) {
-              for (var j = 0; j < lazyLoadData.length; j++) {
-                  if (lazyLoadData[j]['OrderID'] == state.data[i]['OrderID']) {
-                      lazyLoadData.splice(j, 1);
-                      break;
-                  }
-              }
-          }
-          state.endEdit();
-      }
-  }
+// local binding
+var grid1 = new ej.grids.Grid({
+    dataSource: lazyLoadData,
+    height: 300,
+    allowPaging: true,
+    // enableVirtualization: true,
+    // pageSettings: {pageSize: 50},
+    // enableInfiniteScrolling: true,
+    rowHeight: 37,
+    allowGrouping: true,
+    allowSorting: true,
+    allowFiltering: true,
+    filterSettings: { type: 'Excel' },
+    editSettings: { allowAdding: true, allowEditing: true, allowDeleting: true, mode: 'Normal' },
+    toolbar: ['Add', 'Edit', 'Delete', 'Update', 'Cancel', 'Search'],
+    groupSettings: { enableLazyLoading: true, columns: ['ProductName'] },
+    searchSettings: { fields: ['OrderID', 'ProductName', 'ProductID', 'ProductID', 'CustomerName'] },
+    columns: [
+        { field: 'OrderID', headerText: 'Order ID', type: 'number', textAlign: 'Right', isPrimaryKey: true, width: 120 },
+        { field: 'ProductName', headerText: 'Product Name', type: 'string', width: 160 },
+        { field: 'ProductID', headerText: 'Product ID', type: 'number', textAlign: 'Right', width: 120 },
+        { field: 'CustomerID', headerText: 'Customer ID', type: 'string', width: 120 },
+        { field: 'CustomerName', headerText: 'Customer Name', type: 'string', width: 160 }
+    ]
+});
+grid1.appendTo('#Grid1');
 
-  function createLazyLoadData(count) {
+// custom binding
+var grid2 = new ej.grids.Grid({
+    height: 300,
+    allowPaging: true,
+    // enableVirtualization: true,
+    // pageSettings: {pageSize: 50},
+    // enableInfiniteScrolling: true,
+    rowHeight: 37,
+    allowGrouping: true,
+    allowSorting: true,
+    allowFiltering: true,
+    filterSettings: { type: 'Excel' },
+    editSettings: { allowAdding: true, allowEditing: true, allowDeleting: true, mode: 'Normal' },
+    toolbar: ['Add', 'Edit', 'Delete', 'Update', 'Cancel', 'Search'],
+    groupSettings: { enableLazyLoading: true, columns: ['ProductName'] },
+    searchSettings: { fields: ['OrderID', 'ProductName', 'ProductID', 'ProductID', 'CustomerName'] },
+    columns: [
+        { field: 'OrderID', headerText: 'Order ID', type: 'number', textAlign: 'Right', isPrimaryKey: true, width: 120 },
+        { field: 'ProductName', headerText: 'Product Name', type: 'string', width: 160 },
+        { field: 'ProductID', headerText: 'Product ID', type: 'number', textAlign: 'Right', width: 120 },
+        { field: 'CustomerID', headerText: 'Customer ID', type: 'string', width: 120 },
+        { field: 'CustomerName', headerText: 'Customer Name', type: 'string', width: 160 }
+    ],
+    load: load,
+    dataStateChange: dataStateChange,
+    dataSourceChanged: dataSourceChanged,
+    actionFailure: actionFailure,
+});
+grid2.appendTo('#Grid2');
+
+function load() {
+    var query = new ej.data.Query();
+    if (this.groupSettings && this.groupSettings.columns.length) {
+        for (var i = 0; i < this.groupSettings.columns.length; i++) {
+            query.group(this.groupSettings.columns[i]);
+        }
+    }
+    if (this.groupSettings.enableLazyLoading) {
+        query.lazyLoad.push({ key: 'isLazyLoad', value: true });
+    }
+    if (this.allowPaging || this.enableVirtualization || this.enableInfiniteScrolling) {
+        var pageIndex = 1;
+        var pageSize = this.enableInfiniteScrolling ? this.pageSettings.pageSize * 3 : this.pageSettings.pageSize ? this.pageSettings.pageSize : 12;
+        query.isCountRequired = true;
+        query.page(pageIndex, pageSize);
+    }
+    grid2.dataSource = new ej.data.DataManager(lazyLoadData).executeLocal(query);
+}
+
+function dataStateChange(state) {
+    if (state.action &&
+        (state.action.requestType == 'filterchoicerequest' ||
+            state.action.requestType == 'filtersearchbegin' ||
+            state.action.requestType == 'stringfilterrequest')) {
+        var query = new ej.data.Query();
+        query.take(state.take);
+        if (state.where && state.where.length) {
+            query.where(state.where[0].field, state.where[0].operator, state.where[0].value, state.where[0].ignoreCase);
+        }
+        state.dataSource(new ej.data.DataManager(lazyLoadData).executeLocal(query));
+    }
+    else {
+        var currentPageData = lazyLoadData;
+        var query = new ej.data.Query();
+        if (state.search) {
+            query.search(state.search[0].key, state.search[0].fields, state.search[0].operator, state.search[0].ignoreCase);
+        }
+        if (state.where) {
+            var gridqueries = grid2.getDataModule().generateQuery().queries;
+            var wherequery;
+            for (var i = 0; i < gridqueries.length; i++) {
+                if (gridqueries[i].fn == 'onWhere') {
+                    wherequery = gridqueries[i].e;
+                }
+            }
+            query.where(wherequery);
+        }
+        if (state.sorted && state.sorted.length) {
+            for (var i = 0; i < state.sorted.length; i++) {
+                query.sortBy(state.sorted[i].name, state.sorted[i].direction);
+            }
+        }
+        if (state.take > -1 && state.skip > -1) {
+            var pageIndex = (state.skip / state.take) + 1;
+            var pageSize = state.take;
+            query.isCountRequired = true;
+            query.page(pageIndex, pageSize);
+        }
+        if (state.group && state.group.length) {
+            for (var i = 0; i < state.group.length; i++) {
+                query.group(state.group[i]);
+            }
+        }
+        if (state.isLazyLoad) {
+            query.lazyLoad.push({ key: 'isLazyLoad', value: state.isLazyLoad });
+        }
+        if (state.isLazyLoad && state.onDemandGroupInfo) {
+            query.lazyLoad.push({ key: 'onDemandGroupInfo', value: state.action.lazyLoadQuery });
+            query.isCountRequired = true;
+        }
+        grid2.dataSource = new ej.data.DataManager(currentPageData).executeLocal(query);
+    }
+}
+function actionFailure(args) {
+    console.log(args);
+}
+function dataSourceChanged(state) {
+    if (state.action === 'add') {
+        lazyLoadData.unshift(state.data);
+        state.endEdit();
+    }
+    if (state.action === 'edit') {
+        for (var j = 0; j < lazyLoadData.length; j++) {
+            if (lazyLoadData[j]['OrderID'] == state.data['OrderID']) {
+                lazyLoadData[j] = state.data;
+                break;
+            }
+        }
+        state.endEdit();
+    }
+    if (state.requestType == 'delete') {
+        for (var i = 0; i < state.data.length; i++) {
+            for (var j = 0; j < lazyLoadData.length; j++) {
+                if (lazyLoadData[j]['OrderID'] == state.data[i]['OrderID']) {
+                    lazyLoadData.splice(j, 1);
+                    break;
+                }
+            }
+        }
+        state.endEdit();
+    }
+}
+
+
+var radiobutton = new ej.buttons.RadioButton({ label: 'Pagination', name: 'page', checked: true, change: radioChange });
+radiobutton.appendTo('#radiobutton1');
+
+radiobutton = new ej.buttons.RadioButton({ label: 'Virtual Scroll', name: 'page', change: radioChange });
+radiobutton.appendTo('#radiobutton2');
+
+radiobutton = new ej.buttons.RadioButton({ label: 'Infinite Scroll', name: 'page', change: radioChange });
+radiobutton.appendTo('#radiobutton3');
+
+// define the array of data
+let filterTypes = ['FilterBar', 'Menu', 'Excel'];
+
+// initialize DropDownList component
+let dropDownListObject = new ej.dropdowns.DropDownList({
+    //set the data to dataSource property
+    dataSource: filterTypes,
+    // set placeholder to DropDownList input element
+    placeholder: "Select a Filter",
+    value: 'Excel',
+    width: 200,
+    change: ddChange
+});
+
+function ddChange(args){
+    grid1.filterSettings.type = args.value;
+    grid2.filterSettings.type = args.value;
+} 
+
+// render initialized DropDownList
+dropDownListObject.appendTo('#ddlelement');
+function radioChange(args) {
+    debugger;
+    if (this.checked) {
+        if (this.label === 'Virtual Scroll') {
+            grid1.setProperties({
+                allowPaging: false,
+                enableInfiniteScrolling: false,
+                enableVirtualization: true
+            }, true);
+            grid2.setProperties({
+                allowPaging: false,
+                enableInfiniteScrolling: false,
+                enableVirtualization: true
+            }, true);
+        }
+        else if (this.label === 'Infinite Scroll') {
+            grid1.setProperties({
+                allowPaging: false,
+                enableInfiniteScrolling: true,
+                enableVirtualization: false
+            }, true);
+            grid2.setProperties({
+                allowPaging: false,
+                enableInfiniteScrolling: true,
+                enableVirtualization: false
+            }, true);
+        } else {
+            grid1.setProperties({
+                allowPaging: true,
+                enableInfiniteScrolling: false,
+                enableVirtualization: false
+            }, true);
+            grid2.setProperties({
+                allowPaging: true,
+                enableInfiniteScrolling: false,
+                enableVirtualization: false
+            }, true);
+        }
+        grid1.freezeRefresh();
+        grid2.freezeRefresh();
+    }
+}
+function createLazyLoadData(count) {
     if (lazyLoadData.length) {
         return;
     }
